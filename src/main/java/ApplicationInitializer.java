@@ -14,6 +14,7 @@ import java.util.EnumSet;
 import config.AppConfig;
 import filter.JWTFilter;
 import filter.RBACFilter;
+import filter.CorsFilter;
 
 public class ApplicationInitializer implements WebApplicationInitializer{
 
@@ -25,6 +26,10 @@ public class ApplicationInitializer implements WebApplicationInitializer{
 		
 		ServletRegistration.Dynamic dispatcher = servletContext.addServlet("frontcontroller", new DispatcherServlet(appContext));
 		dispatcher.addMapping("/frontcontroller/*");  
+
+		//Filter 0 (optional - refer CorsFilter comments):
+		FilterRegistration.Dynamic corsFilter = servletContext.addFilter("CorsFilter", new CorsFilter());
+		corsFilter.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), true, "/frontcontroller/*");
 		
 		//Filter 1:
 		FilterRegistration.Dynamic jwtFilter = servletContext.addFilter("JWTFilter", new JWTFilter());
