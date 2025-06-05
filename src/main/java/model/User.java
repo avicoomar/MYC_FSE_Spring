@@ -41,7 +41,7 @@ public class User {
     
     @Getter @Setter private String firstName;
     
-    @Getter @Setter private String Lastname;
+    @Getter @Setter private String LastName;
     
     @Column(unique = true)
     @Getter @Setter private Short phoneNo;
