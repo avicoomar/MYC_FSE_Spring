@@ -52,7 +52,10 @@ public class AuthController{
 		if(repo.findByUsername(user.getUsername()).size() > 0)
 			return "User already exists";
 		repo.save(user);
-		return "User created";
+		Map<String,Object> claims = new HashMap<String, Object>();
+		claims.put("userid", user.getUserid());
+		claims.put("role", user.getRole());
+		return jwtutil.createToken(claims);
 	}
 	
 }

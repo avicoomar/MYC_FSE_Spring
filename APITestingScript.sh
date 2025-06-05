@@ -1,10 +1,10 @@
 echo "-----------------------------------Calling /signup--------------------------------------";
-response=$(curl \
+jwtToken=$(curl \
 -X POST \
 -H "Content-Type: application/json" \
 -d '{"username":"avico","password":"sex123","role":"INVESTOR"}' \
 http://localhost:8080/MYC_FSE_Spring-1/frontcontroller/auth/signup);
-echo "Response: $response";
+echo "Response: $jwtToken";
 
 echo "-----------------------------------Calling /signin--------------------------------------";
 jwtToken=$(curl \
