@@ -58,4 +58,13 @@ public class AuthController{
 		return jwtutil.createToken(claims);
 	}
 	
+	@GetMapping("/refresh-token")
+	@ResponseBody	
+	public String refreshToken(){
+/*
+TODO: This API is to prevent XSS vulnerability by following a hybrid approach of access_token & refresh_token for authentication. Send access_token in /signin & /signup as it is, but along with that generate & set refresh_token in cookie. access_token shall be short lived (3 minutes). After access_token expiration, client shall send request to this API, here we get the refresh_token cookie from header, verify it, then send an access_token again
+*/
+		return "";
+	}
+	
 }
