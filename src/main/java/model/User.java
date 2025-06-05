@@ -44,7 +44,7 @@ public class User {
     @Getter @Setter private String LastName;
     
     @Column(unique = true)
-    @Getter @Setter private Short phoneNo;
+    @Getter @Setter private int phoneNo;
     
     @Enumerated(EnumType.STRING)
     @Getter @Setter private Role role;
