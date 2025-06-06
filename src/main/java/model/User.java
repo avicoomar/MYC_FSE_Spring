@@ -49,6 +49,8 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Getter @Setter private Role role;
     
+    @Getter @Setter private String refreshToken;
+    
     @OneToOne(cascade = CascadeType.ALL, mappedBy="user") //non-owning side
     @Getter @Setter private InvestorDetails investorDetails;
     

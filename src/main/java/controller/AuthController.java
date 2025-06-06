@@ -16,6 +16,11 @@ import util.JWTUtil;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.UUID;
+
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
 
 @Controller
 @RequestMapping("/auth")
@@ -29,7 +34,7 @@ public class AuthController{
 	
 	@PostMapping("/signin")
 	@ResponseBody	
-	public String signin(@RequestBody UsernamePassword usernamePasswordReceived){
+	public String signin(@RequestBody UsernamePassword usernamePasswordReceived, HttpServletResponse response){
 		
 		List<User> users = repo.findByUsername(usernamePasswordReceived.getUsername());
 		
@@ -37,8 +42,19 @@ public class AuthController{
 		
 		for (User user : users){
 			if(usernamePasswordReceived.getPassword().equals(user.getPassword())){
+				
+				String refreshToken = user.getRefreshToken(); //Get user's refresh token
+				
+				//Set a cookie called "refresh_token"
+				Cookie cookie1 = new Cookie("refresh_token", refreshToken);
+				cookie1.setHttpOnly(true);
+				cookie1.setPath("/");
+				response.addCookie(cookie1);
+				
+				//Set JWT Claims
 				claims.put("userid", user.getUserid());	
-				claims.put("role", user.getRole());	
+				claims.put("role", user.getRole());
+				
 				return jwtutil.createToken(claims);
 			}
 		}
@@ -48,23 +64,71 @@ public class AuthController{
 	
 	@PostMapping("/signup")
 	@ResponseBody	
-	public String signup(@RequestBody User user){
+	public String signup(@RequestBody User user, HttpServletResponse response){
 		if(repo.findByUsername(user.getUsername()).size() > 0)
 			return "User already exists";
+		
+		String refreshToken = UUID.randomUUID().toString(); //Generate refresh token
+		
+		//Save user along with his refresh token in db
+		user.setRefreshToken(refreshToken);
 		repo.save(user);
+
+		//Set a cookie called "refresh_token"
+		Cookie cookie1 = new Cookie("refresh_token", refreshToken);
+		cookie1.setHttpOnly(true);
+		cookie1.setPath("/");
+		response.addCookie(cookie1);
+				
+		//Set JWT Claims
+		long userid = (repo.findByUsername(user.getUsername())).get(0).getUserid();
+		User.Role role = (repo.findByUsername(user.getUsername())).get(0).getRole();
 		Map<String,Object> claims = new HashMap<String, Object>();
-		claims.put("userid", user.getUserid());
-		claims.put("role", user.getRole());
+		claims.put("userid", userid);
+		claims.put("role", role);
+		
 		return jwtutil.createToken(claims);
 	}
 	
+	
+	//API for browser(frontend) to refresh jwt token (that expired after 3 mins), since the frontend cannot always call /signin to get new JWT Token
 	@GetMapping("/refresh-token")
 	@ResponseBody	
-	public String refreshToken(){
-/*
-TODO: This API is to prevent XSS vulnerability by following a hybrid approach of access_token & refresh_token for authentication. Send access_token in /signin & /signup as it is, but along with that generate & set refresh_token in cookie. access_token shall be short lived (3 minutes). After access_token expiration, client shall send request to this API, here we get the refresh_token cookie from header, verify it, then send an access_token again
-*/
-		return "";
+	public String refreshToken(HttpServletRequest request){
+		
+		//Get "refresh_token" cookie
+		Cookie[] cookies = request.getCookies();
+		String refreshToken = "";
+		for(Cookie cookie : cookies){
+			if(cookie.getName().equalsIgnoreCase("refresh_token"))
+				refreshToken = cookie.getValue();
+		}
+		
+		
+		List<User> users = repo.findByRefreshToken(refreshToken); //Find user by refresh_token (chances of finding multiple users are astronomically low) 
+		
+		//Validate refresh_token of user & return new jwt token if valid
+		for(User user : users){
+			if(refreshToken.equalsIgnoreCase(user.getRefreshToken())){
+				Map<String,Object> claims = new HashMap<String, Object>();
+				claims.put("userid", user.getUserid());
+				claims.put("role", user.getRole());
+				return jwtutil.createToken(claims);
+			}
+				
+		}
+		return "JWT token cannot be refreshed";
+	}
+	
+	//API for browser(frontend) to clear it's RefreshToken cookie
+	@GetMapping("/signout")
+	@ResponseBody	
+	public void signout(HttpServletResponse response){
+		Cookie cookie1 = new Cookie("refresh_token", "");
+		cookie1.setPath("/");
+		cookie1.setHttpOnly(true);
+		cookie1.setMaxAge(0);
+		response.addCookie(cookie1);
 	}
 	
 }
